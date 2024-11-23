@@ -1,0 +1,2 @@
+[console_scripts]
+Extract-By-Function = MetaPont.Extract_By_Function:main

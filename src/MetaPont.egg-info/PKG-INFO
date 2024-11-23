@@ -1,0 +1,111 @@
+Metadata-Version: 2.1
+Name: MetaPont
+Version: 0.0.1
+Summary: MetaPont - A tool to bridge the gap between the output of metagenomic tools and the analysis of the data
+Home-page: https://github.com/TheHuwsLab/MetaPont
+Author: Nicholas Dimonaco
+Author-email: nicholas@dimonaco.co.uk
+Project-URL: Bug Tracker, https://github.com/TheHuwsLab/MetaPont/issues
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: GNU General Public License v3 (GPLv3)
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+# MetaPont
+**MetaPont**  - A tool to bridge the gap between the output of metagenomic tools and the analysis of the data
+
+## Features - These are the current aims of this project  - Still under development
+
+- **Targeted Functional Analysis:** Search for specific functional IDs (e.g., GO terms) within the `.tsv` files provided by the HuwsLab Metagenome Workflow (https://github.com/TheHuwsLab/Metagenome_Workflow) .
+- **Taxonomic Breakdown:** Extract genus-level taxonomy information and calculate their proportions in the dataset.
+- **Batch Processing:** Analyse all `.tsv` files in a specified directory.
+- **Customisable Output:** Save results in a format suitable for downstream analysis.
+
+---
+
+## Installation
+
+### Prerequisites
+
+Ensure you have the following installed:
+
+- Python ~3.6 or later
+- Required Python libraries: `argparse`, `csv`, and `collections` (standard libs).
+
+### Installation via pip
+
+MetaPont is provided as a pip distribution. 
+
+```bash
+pip install MetaPont 
+```
+
+---
+
+## Usage
+
+### Command-line Arguments
+
+The `Extract-By-Function` tool provides several command-line options:
+
+| Option                   | Description                                   | Required | Default                       |
+|--------------------------|-----------------------------------------------|----------|-------------------------------|
+| `-d`, `--directory`      | Directory containing `.tsv` files to analyse. | Yes      | None                          |
+| `-f`, `--function_id`    | Functional ID to search for (e.g., `GO:0002`). | Yes      | None                          |
+| `-m`, `--min_proportion` | Minimum proportion needed for reporting.      | Yes      | 0.05 (5%)                     |
+| `-o`, `--output`         | Output file name to save results.             | No       | `output_taxa_proportions.tsv` |
+
+### Example
+
+To search for the functional ID `GO:0002` in all `.tsv` files within the `data/` directory:
+
+```bash
+ExtractByFunction -d .../test_data/Final_contig/ -f GO:0002 -m 0.10 -o .../test_data/Final_Contig/Extract_By_Function_Out/results.tsv
+```
+
+---
+
+## Output
+
+The tool generates a tab-delimited output file with the following columns:
+
+1. **Sample:** Name of the processed `.tsv` file.
+2. **Taxa:** Genus-level taxonomic assignment extracted from the `Lineage` column.
+3. **Proportion:** Proportion of matches to the given functional ID within the sample.
+
+Example output:
+
+```
+Function ID: GO:0002
+Sample	Taxa	Proportion
+sample1.tsv	Escherichia	0.542857
+sample1.tsv	Salmonella	0.457143
+sample2.tsv	Bacillus	0.650000
+sample2.tsv	Clostridium	0.350000
+```
+
+---
+
+## Implementation Details
+
+### Workflow
+
+1. The script reads `.tsv` files from the specified directory.
+2. For each file, it searches for occurrences of the given functional ID within specific columns.
+3. Matches are associated with genus-level taxonomic information extracted from the `Lineage` column.
+4. Taxa proportions are calculated and saved to the output file.
+
+### Large File Handling (Might be a failure point)
+
+The script uses `csv.field_size_limit` to handle exceptionally large `.tsv` files.
+
+---
+
+## Future Plans
+
+- Add support for additional file formats (e.g., `.csv`, `.txt`).
+- Expand functionality for more complex taxonomic and functional analyses.
+---
+

@@ -1,0 +1,9 @@
+Lineage_Genus	PN0536_0001_S1	PN0536_0002_S2	PN0536_0003_S83	PN0536_0004_S3
+Total_Num_Reads	36789084	39128322	40085722	31175878
+d__Viruses|k__unknown|p__unknown|c__unknown|o__unknown|f__unknown|g__Pandoravirus	0	0	93	0
+d__Viruses|k__Heunggongvirae|p__Uroviricota|c__Caudoviricetes|o__unknown|f__unknown|g__Mapvirus	0	0	0	97
+d__Viruses|k__Bamfordvirae|p__Nucleocytoviricota|c__Megaviricetes|o__Imitervirales|f__Mimiviridae|g__unknown	0	222	0	0
+d__Viruses|k__Heunggongvirae|p__Uroviricota|c__Caudoviricetes|o__unknown|f__Schitoviridae|g__Litunavirus	272	0	0	0
+d__Viruses|k__Bamfordvirae|p__Nucleocytoviricota|c__Megaviricetes|o__Pimascovirales|f__Marseilleviridae|g__Marseillevirus	0	0	0	290
+d__Viruses|k__Heunggongvirae|p__Uroviricota|c__Caudoviricetes|o__unknown|f__Autographiviridae|g__Przondovirus	397	0	0	0
+d__Viruses|k__Heunggongvirae|p__Peploviricota|c__Herviviricetes|o__Herpesvirales|f__Herpesviridae|g__Cytomegalovirus	0	0	135	0

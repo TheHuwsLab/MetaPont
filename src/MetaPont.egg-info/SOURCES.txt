@@ -1,0 +1,17 @@
+LICENSE
+README.md
+pyproject.toml
+setup.cfg
+src/MetaPont/Extraction_By_Function.py
+src/MetaPont/Function_By_Taxa.py
+src/MetaPont/__init__.py
+src/MetaPont/constants.py
+src/MetaPont/emapper_readmap_cds_combiner_v1.py
+src/MetaPont/kraken_emapper_readmap_combiner_v1.py
+src/MetaPont/lineage_matrix_collapse_v1.py
+src/MetaPont/lineage_matrix_collapse_v2.py
+src/MetaPont.egg-info/PKG-INFO
+src/MetaPont.egg-info/SOURCES.txt
+src/MetaPont.egg-info/dependency_links.txt
+src/MetaPont.egg-info/entry_points.txt
+src/MetaPont.egg-info/top_level.txt
