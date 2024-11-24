@@ -32,6 +32,23 @@ pip install MetaPont
 ## Usage
 
 ### Command-line Arguments
+```Extract-By-Function -h ``` 
+```bash
+usage: Extract-By-Function [-h] -d DIRECTORY -f FUNCTION_ID [-o OUTPUT] [-m MIN_PROPORTION]
+
+MetaPont v0.0.2: Extract-By-Function - Identify taxa contributing to a specific function.
+
+options:
+  -h, --help            show this help message and exit
+  -d DIRECTORY, --directory DIRECTORY
+                        Directory containing TSV files to analyse.
+  -f FUNCTION_ID, --function_id FUNCTION_ID
+                        Specific function ID to search for (e.g., 'GO:0002').
+  -o OUTPUT, --output OUTPUT
+                        Output file to save results (default: output_taxa_details.tsv).
+  -m MIN_PROPORTION, --min_proportion MIN_PROPORTION
+                        Minimum proportion threshold for taxa to be included in the output (default: 0.05).
+```
 
 The `Extract-By-Function` tool provides several command-line options:
 
@@ -64,11 +81,13 @@ Example output:
 
 ```
 Function ID: GO:0002
-Sample	Taxa	Proportion
-sample1.tsv	Escherichia	0.542857
-sample1.tsv	Salmonella	0.457143
-sample2.tsv	Bacillus	0.650000
-sample2.tsv	Clostridium	0.350000
+Sample	Taxa	Reads Assigned (Function)	Proportion (Function)	Proportion (Total Reads)
+PN0536_0003_S83_Final_Contig.tsv	Gordonibacter	60788	0.075	0.002
+PN0536_0003_S83_Final_Contig.tsv	Streptomyces	115671	0.142	0.004
+PN0536_0003_S83_Final_Contig.tsv	unknown	80890	0.099	0.003
+PN0536_0003_S83_Final_Contig.tsv	Clostridium	51018	0.063	0.002
+PN0536_0003_S83_Final_Contig.tsv	Lactobacillus	149909	0.184	0.005
+PN0536_0003_S83_Final_Contig.tsv	Limosilactobacillus	79694	0.098	0.003
 ```
 
 ---

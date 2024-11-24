@@ -1,2 +1,2 @@
-MetaPont_Version = 'v0.0.1'
+MetaPont_Version = 'v0.0.2'
 
