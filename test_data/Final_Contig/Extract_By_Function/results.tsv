@@ -1,22 +1,6 @@
-Function ID: GO:0002
+Function ID: GO:0016597
 Sample	Taxa	Reads Assigned (Function)	Proportion (Function)	Proportion (Total Reads)
-PN0536_0003_S83_Final_Contig.tsv	Gordonibacter	60788	0.075	0.002
-PN0536_0003_S83_Final_Contig.tsv	Streptomyces	115671	0.142	0.004
-PN0536_0003_S83_Final_Contig.tsv	unknown	80890	0.099	0.003
-PN0536_0003_S83_Final_Contig.tsv	Clostridium	51018	0.063	0.002
-PN0536_0003_S83_Final_Contig.tsv	Lactobacillus	149909	0.184	0.005
-PN0536_0003_S83_Final_Contig.tsv	Limosilactobacillus	79694	0.098	0.003
-PN0536_0001_S1_Final_Contig.tsv	Gordonibacter	71375	0.080	0.003
-PN0536_0001_S1_Final_Contig.tsv	Lactobacillus	480316	0.535	0.017
-PN0536_0001_S1_Final_Contig.tsv	Faecalibacterium	47158	0.053	0.002
-PN0536_0001_S1_Final_Contig.tsv	Bacillus	85056	0.095	0.003
-PN0536_0001_S1_Final_Contig.tsv	Limosilactobacillus	57927	0.065	0.002
-PN0536_0002_S2_Final_Contig.tsv	Faecalibacterium	261954	0.159	0.009
-PN0536_0002_S2_Final_Contig.tsv	Acutalibacter	684516	0.416	0.023
-PN0536_0002_S2_Final_Contig.tsv	unknown	238092	0.145	0.008
-PN0536_0002_S2_Final_Contig.tsv	Lactobacillus	162246	0.099	0.005
-PN0536_0002_S2_Final_Contig.tsv	Clostridium	173976	0.106	0.006
-PN0536_0004_S3_Final_Contig.tsv	Acutalibacter	217611	0.266	0.009
-PN0536_0004_S3_Final_Contig.tsv	Lactobacillus	296631	0.363	0.012
-PN0536_0004_S3_Final_Contig.tsv	Limosilactobacillus	114661	0.140	0.005
-PN0536_0004_S3_Final_Contig.tsv	Escherichia	73736	0.090	0.003
+PN0536_0001_S1_Final_Contig.tsv	Lactobacillus	111963	0.602	0.004
+PN0536_0003_S83_Final_Contig.tsv	Lactobacillus	20072	0.457	0.001
+PN0536_0002_S2_Final_Contig.tsv	Acutalibacter	145222	0.795	0.005
+PN0536_0004_S3_Final_Contig.tsv	Lactobacillus	40076	0.404	0.002

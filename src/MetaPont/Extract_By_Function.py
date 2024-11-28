@@ -62,18 +62,26 @@ def main():
     )
     parser.add_argument(
         "-f", "--function_id", required=True,
-        help="Specific function ID to search for (e.g., 'GO:0002')."
+        help="Specific function ID to search for (e.g., 'GO:0016597')."
     )
     parser.add_argument(
-        "-o", "--output", default="output_taxa_details.tsv",
-        help="Output file to save results (default: output_taxa_details.tsv)."
+        "-o", "--output", required=True,
+        help="Output file to save results."
     )
     parser.add_argument(
-        "-m", "--min_proportion", type=float, default=0.05,
-        help="Minimum proportion threshold for taxa to be included in the output (default: 0.05)."
+        "-m", "--min_proportion", type=float,
+        help="Minimum proportion threshold for taxa to be included in the output."
+    )
+    parser.add_argument(
+        "-top", "--top_taxa", type=int,
+        help="Top n taxa to be included in the output."
     )
 
     options = parser.parse_args()
+    if not options.min_proportion and not options.top_taxa:
+        sys.exit("Error: Please specify either a minimum proportion or the number of top taxa to include in the output.")
+    elif options.min_proportion and options.top_taxa:
+        sys.exit("Error: Please specify either a minimum proportion or the number of top taxa to include in the output, not both.")
     print("Running MetaPont: Extract-By-Function " + MetaPont_Version)
 
     input_path = os.path.abspath(options.directory)
@@ -94,12 +102,21 @@ def main():
         out.write("Function ID: " + options.function_id + "\n")
         out.write("Sample\tTaxa\tReads Assigned (Function)\tProportion (Function)\tProportion (Total Reads)\n")
         for sample, (taxa_reads_function, total_reads_function, total_reads_all) in all_results.items():
-            for taxa, reads_function in taxa_reads_function.items():
-                proportion_function = reads_function / total_reads_function if total_reads_function > 0 else 0
-                proportion_total = reads_function / total_reads_all if total_reads_all > 0 else 0
-
-                if proportion_function >= options.min_proportion:  # Apply minimum proportion filter
-                    out.write(f"{sample}\t{taxa}\t{reads_function}\t{proportion_function:.3f}\t{proportion_total:.3f}\n")
+            if options.min_proportion:
+                for taxa, reads_function in taxa_reads_function.items():
+                    proportion_function = reads_function / total_reads_function if total_reads_function > 0 else 0
+                    proportion_total = reads_function / total_reads_all if total_reads_all > 0 else 0
+                    if proportion_function >= options.min_proportion:  # Apply minimum proportion filter
+                        out.write(f"{sample}\t{taxa}\t{reads_function}\t{proportion_function:.3f}\t{proportion_total:.3f}\n")
+            elif options.top_taxa:
+                sorted_taxa_reads = sorted(taxa_reads_function.items(), key=lambda x: x[1], reverse=True)
+                for i, (taxa, reads_function) in enumerate(sorted_taxa_reads):
+                    if i < options.top_taxa:
+                        proportion_function = reads_function / total_reads_function if total_reads_function > 0 else 0
+                        proportion_total = reads_function / total_reads_all if total_reads_all > 0 else 0
+                        out.write(f"{sample.replace('_Final_Contig.tsv','')}\t{taxa}\t{reads_function}\t{proportion_function:.3f}\t{proportion_total:.3f}\n")
+                    else:
+                        break
 
     print(f"Results saved to {options.output}")
 
