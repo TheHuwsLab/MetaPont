@@ -313,7 +313,7 @@ def main():
     )
     parser.add_argument(
         "-t", "--ex_taxon", required=False, default='k__Metazoa,k__Viridiplantae',
-        help="Default - 'k__Metazoa': Taxon groups to exclude (provide as list e.g. 'k__Metazoa,k__Viridiplantae')."
+        help="Default - 'k__Metazoa,k__Viridiplantae': Taxon groups to exclude (provide as list e.g. 'k__Metazoa,k__Viridiplantae')."
     )
     parser.add_argument(
         "-m", "--minlen", required=False, default=2500,

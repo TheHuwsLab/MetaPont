@@ -46,9 +46,11 @@ def process_tsv(file_path, function_id):
             for cell in row[6:]:
                 if cell and any(function_id in part for part in cell.replace(',', '|').split('|')):
                     if "g__" in lineage:
-                        genus = lineage.split("g__")[1].split("|")[0]
-                        taxa_reads_function[genus] += reads
+                        lineage = lineage.split("s__")[0]#.split("|")[0]
+                        taxa_reads_function[lineage] += reads
                         total_reads_function += reads
+                    else:
+                        sys.exit("'__g' not in lineage.")
                     break  # Stop checking further functional columns for this row
 
     return taxa_reads_function, total_reads_function, total_reads_all
@@ -91,7 +93,7 @@ def main():
 
     # Process each TSV file in the directory
     for file_name in os.listdir(input_path):
-        if file_name.endswith("_Final_Contig.tsv"):
+        if file_name.endswith("_Final_Output.tsv"):
             file_path = os.path.join(options.directory, file_name)
             print(f"Processing file: {file_name}")
             taxa_reads_function, total_reads_function, total_reads_all = process_tsv(file_path, options.function_id)
@@ -100,21 +102,23 @@ def main():
     # Write results to output
     with open(output_path, "w") as out:
         out.write("Function ID: " + options.function_id + "\n")
-        out.write("Sample\tTaxa\tReads Assigned (Function)\tProportion (Function)\tProportion (Total Reads)\n")
-        for sample, (taxa_reads_function, total_reads_function, total_reads_all) in all_results.items():
+        out.write("Sample\tFull Lineage\tGenus\tReads Assigned (Function)\tProportion (Function)\tProportion (Total Reads)\n")
+        for sample, (taxa_reads_function, total_reads_function, total_reads_all) in sorted(all_results.items()):
             if options.min_proportion:
-                for taxa, reads_function in taxa_reads_function.items():
+                for lineage, reads_function in taxa_reads_function.items():
+                    genus = lineage.split("g__")[1].split("|")[0]
                     proportion_function = reads_function / total_reads_function if total_reads_function > 0 else 0
                     proportion_total = reads_function / total_reads_all if total_reads_all > 0 else 0
                     if proportion_function >= options.min_proportion:  # Apply minimum proportion filter
-                        out.write(f"{sample}\t{taxa}\t{reads_function}\t{proportion_function:.3f}\t{proportion_total:.3f}\n")
+                        out.write(f"{sample}\t{lineage}\t{genus}\t{reads_function}\t{proportion_function:.3f}\t{proportion_total:.3f}\n")
             elif options.top_taxa:
                 sorted_taxa_reads = sorted(taxa_reads_function.items(), key=lambda x: x[1], reverse=True)
-                for i, (taxa, reads_function) in enumerate(sorted_taxa_reads):
+                for i, (lineage, reads_function) in enumerate(sorted_taxa_reads):
                     if i < options.top_taxa:
+                        genus = lineage.split("g__")[1].split("|")[0]
                         proportion_function = reads_function / total_reads_function if total_reads_function > 0 else 0
                         proportion_total = reads_function / total_reads_all if total_reads_all > 0 else 0
-                        out.write(f"{sample.replace('_Final_Contig.tsv','')}\t{taxa}\t{reads_function}\t{proportion_function:.3f}\t{proportion_total:.3f}\n")
+                        out.write(f"{sample.replace('_Final_Contig.tsv','')}\t{lineage}\t{genus}\t{reads_function}\t{proportion_function:.3f}\t{proportion_total:.3f}\n")
                     else:
                         break
 
