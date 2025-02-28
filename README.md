@@ -37,7 +37,7 @@ pip install MetaPont
 usage: Extract_By_Function.py [-h] -d DIRECTORY -f FUNCTION_ID -o OUTPUT
                               [-m MIN_PROPORTION] [-top TOP_TAXA]
 
-MetaPont v0.0.3: Extract-By-Function - Identify taxa contributing to a
+MetaPont v0.0.6: Extract-By-Function - Identify taxa contributing to a
 specific function.
 
 options:

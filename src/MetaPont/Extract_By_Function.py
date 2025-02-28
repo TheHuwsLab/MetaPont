@@ -67,6 +67,10 @@ def main():
         help="Specific function ID to search for (e.g., 'GO:0016597')."
     )
     parser.add_argument(
+        "-a", "--file_affix", required=True,
+        help="Input TSV file affix to use when searching contig files."
+    )
+    parser.add_argument(
         "-o", "--output", required=True,
         help="Output file to save results."
     )
@@ -93,7 +97,7 @@ def main():
 
     # Process each TSV file in the directory
     for file_name in os.listdir(input_path):
-        if file_name.endswith("_Final_Output.tsv"):
+        if file_name.endswith(options.file_affix):
             file_path = os.path.join(options.directory, file_name)
             print(f"Processing file: {file_name}")
             taxa_reads_function, total_reads_function, total_reads_all = process_tsv(file_path, options.function_id)
@@ -118,7 +122,7 @@ def main():
                         genus = lineage.split("g__")[1].split("|")[0]
                         proportion_function = reads_function / total_reads_function if total_reads_function > 0 else 0
                         proportion_total = reads_function / total_reads_all if total_reads_all > 0 else 0
-                        out.write(f"{sample.replace('_Final_Contig.tsv','')}\t{lineage}\t{genus}\t{reads_function}\t{proportion_function:.3f}\t{proportion_total:.3f}\n")
+                        out.write(f"{sample.replace(options.file_affix,'')}\t{lineage}\t{genus}\t{reads_function}\t{proportion_function:.3f}\t{proportion_total:.3f}\n")
                     else:
                         break
 
