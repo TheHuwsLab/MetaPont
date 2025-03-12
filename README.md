@@ -101,6 +101,28 @@ PN0536_0004_S3_Final_Contig.tsv	Lactobacillus	40076	0.404	0.002
 
 ---
 
+# Extract-Function-By-Taxa:
+```bash
+usage: Extract_Function_By_Taxa.py [-h] -d DIRECTORY -t TAXON -f FUNCTION -o
+                                   OUTPUT
+
+MetaPont: Extract Reads Proportions for a Specific Taxon and Function
+
+options:
+  -h, --help            show this help message and exit
+  -d DIRECTORY, --directory DIRECTORY
+                        Directory containing TSV files to analyse.
+  -t TAXON, --taxon TAXON
+                        Target taxon to search for (e.g., 'g__Escherichia').
+  -f FUNCTION, --function FUNCTION
+                        Target function to extract (e.g., 'EC:2.7.11.1').
+  -o OUTPUT, --output OUTPUT
+                        Output file to save results.
+
+```
+
+
+
 
 
 ### Workflow - unfinished
