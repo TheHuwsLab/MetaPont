@@ -73,7 +73,7 @@ Note: Either -m or -top is required.
 To search for the functional ID `GO:0016597` in all `_Final_Contig.tsv` files within the `test_data/` directory:
 
 ```bash
-Extract=By-Function -d .../test_data/Final_contig/ -f GO:0016597 -top 3 -o .../test_data/Final_Contig/Extract_By_Function_Out/results.tsv
+Extract-By-Function -d .../test_data/Final_contig/ -f GO:0016597 -top 3 -o .../test_data/Final_Contig/Extract_By_Function_Out/results.tsv
 ```
 
 ---
