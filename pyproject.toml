@@ -1,7 +1,55 @@
 [build-system]
-requires = [
-    "setuptools",
-    "wheel",
-]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "MetaPont"
+version = "0.0.9"
+authors = [
+    {name = "Nicholas Dimonaco", email = "nicholas@dimonaco.co.uk"}
+]
+description = "MetaPont: A tool to bridge the gap between metagenomic tool output and its analysis."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+keywords = ["Metagenomics", "Bioinformatics", "Genomics"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+
+]
+
+[project.urls]
+Homepage = "https://github.com/TheHuwsLab/MetaPont"
+"Bug Tracker" = "https://github.com/TheHuwsLab/MetaPont/issues"
+
+[project.scripts]
+Extract-By-Function = "MetaPont.Extract_By_Function:main"
+extract-by-function = "MetaPont.Extract_By_Function:main"
+Extract-By-Taxa = "MetaPont.Extract_By_Taxa:main"
+extract-by-taxa = "MetaPont.Extract_By_Taxa:main"
+Extract-Function-By-Taxa = "MetaPont.Extract_Function_By_Taxa:main"
+extract-function-by-taxa = "MetaPont.Extract_Function_By_Taxa:main"
+Extract-Reads-By-Function = "MetaPont.Extract_Reads_By_Function:main"
+extract-reads-by-function = "MetaPont.Extract_Reads_By_Function:main"
+MetaPont-Combine = "metapont_combine:main"
+metapont-combine = "metapont_combine:main"
+Contig-Coverage-Summary = "Contig_Coverage_Summary:main"
+contig-coverage-summary = "Contig_Coverage_Summary:main"
+Report-Contig-Lineage = "Report_Contig_Lineage:main"
+report-contig-lineage = "Report_Contig_Lineage:main"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["MetaPont*"]
+
+#[tool.setuptools.package-data]
+#MetaPont = [
+
+#]

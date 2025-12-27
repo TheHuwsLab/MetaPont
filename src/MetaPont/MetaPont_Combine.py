@@ -1,20 +1,33 @@
 import os
 from collections import defaultdict
 import re
-import sys
 import argparse
+
+
+try:
+    from .constants import *
+except (ModuleNotFoundError, ImportError, NameError, TypeError) as error:
+    from constants import *
 
 ################
 
 
 def processCoreOutput(parent_directory_path,prefix):
+    # Allow multiple prefixes (list, tuple, comma-separated string or single string)
+    if isinstance(prefix, (list, tuple)):
+        starts = tuple(prefix)
+    elif isinstance(prefix, str):
+        if ',' in prefix:
+            starts = tuple(p.strip() for p in prefix.split(',') if p.strip())
+        else:
+            starts = (prefix,)
 
     for subdir, dirs, files in os.walk(parent_directory_path, topdown=True):
         for dir in dirs:
             try:
                 current_dir = os.path.basename(dir)
                 parent_of_current_dir = os.path.basename(subdir)
-                if current_dir.startswith(prefix) and parent_of_current_dir == os.path.basename(parent_directory_path):
+                if current_dir.startswith(starts) and parent_of_current_dir == os.path.basename(parent_directory_path):
                     print(current_dir)
                     specific_dir_path = os.path.join(subdir, dir)
                     first_file_path = os.path.join(specific_dir_path, f"{dir}_eggnog_mapper/{dir}_pyrodigal_eggnog_mapped.emapper.annotations")
@@ -143,7 +156,7 @@ def processCoreOutput(parent_directory_path,prefix):
 
 
 
-                    print("RM")
+                    #print("RM")
                     with open(fifth_file_path, 'r') as readmapped_in:
                         for line in readmapped_in:
                             if not line.startswith('Contig'): #sloppy
@@ -195,10 +208,10 @@ def processCoreOutput(parent_directory_path,prefix):
                             except IndexError:
                                 continue
 
-                    output_path = os.path.join(parent_directory_path, 'Contig_Final_Outputs')
+                    output_path = os.path.join(parent_directory_path, 'Per_Sample_Contig_Outputs')
                     if not os.path.exists(output_path):
                         os.makedirs(output_path)
-                    output = open(os.path.join(output_path, dir + '_Final_Contig.tsv'),'w')
+                    output = open(os.path.join(output_path, dir + '_Contigs.tsv'),'w')
 
 
                     output.write(dir+'\n')
@@ -222,17 +235,13 @@ def processCoreOutput(parent_directory_path,prefix):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='MetaPont: Combine emapper-kraken-reads')
+    parser = argparse.ArgumentParser(description='MetaPont ' + MetaPont_Version + '- MetaPont-Combine:  Combine emapper, kraken read mapping results')
     parser.add_argument(
         "-d", "--parent_directory_path", required=True,
         help="Directory containing sample directories to analyse."
     )
-    parser.add_argument(
-        "-p", "--prefix", required=False, default='PN',
-        help="Default - 'PN': Default directory name prefix to identify sample directories to analyse.."
-    )
-
-
+    parser.add_argument("--prefix", "-p", required=True,
+                        help="Comma-separated directory tags to search for (e.g. E,L,P).")
 
     options = parser.parse_args()
     print("Running MetaPont: Combine emapper-kraken-reads")
