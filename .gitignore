@@ -4,3 +4,7 @@ dist/
 src/MetaPont.egg-info/
 
 *.pyc
+
+example_data/MetaPont_Combine/.DS_Store
+
+example_data/.DS_Store

@@ -28,12 +28,22 @@ def processFunction(input_dir, ex_taxon, minlen, prefix):
     functions = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
 
 
+    # Allow multiple prefixes (list, tuple, comma-separated string or single string)
+    if isinstance(prefix, (list, tuple)):
+        starts = tuple(prefix)
+    elif isinstance(prefix, str):
+        if ',' in prefix:
+            starts = tuple(p.strip() for p in prefix.split(',') if p.strip())
+        else:
+            starts = (prefix,)
+
     for subdir, dirs, files in os.walk(input_dir, topdown=True):
         for dir in dirs:
             try:
                 current_dir = os.path.basename(dir)
                 parent_of_current_dir = os.path.basename(subdir)
-                if current_dir.startswith(prefix) and parent_of_current_dir == os.path.basename(input_dir):
+                if current_dir.startswith(starts) and parent_of_current_dir == os.path.basename(input_dir):
+
                     print(current_dir)
                     specific_dir_path = os.path.join(subdir, dir)
                     first_file_path = os.path.join(specific_dir_path, f"{dir}_readmapped/{dir}_readmapped_cds_summary.txt")
