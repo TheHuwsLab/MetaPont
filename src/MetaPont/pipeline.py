@@ -201,7 +201,7 @@ def _iter_base_contigs(sample: SamplePaths, assignments: dict[str, dict[str, Any
             }
 
 
-def _annotation_maps(sample: SamplePaths, contig_ids: set[str], assignments: dict[str, dict[str, Any]], gene_support: dict[str, int], gene_writer: csv.DictWriter):
+def _annotation_maps(sample: SamplePaths, contig_ids: set[str], assignments: dict[str, dict[str, Any]], gene_support: dict[str, int], gene_writer: csv.DictWriter, include_taxon_functions: bool = False):
     by_contig: dict[str, dict[str, Any]] = {}
     gene_count = 0
     functional: dict[tuple[str, str], list[int]] = defaultdict(lambda: [0, 0])
@@ -233,13 +233,14 @@ def _annotation_maps(sample: SamplePaths, contig_ids: set[str], assignments: dic
                 record["features"][category].add(feature)
                 functional[(category, feature)][0] += 1
                 functional[(category, feature)][1] += support
-                lineage = assignments.get(contig, {}).get("lineage", empty_lineage())
-                for rank in LINEAGE_RANKS:
-                    taxon = _lineage_taxon(lineage, rank)
-                    if taxon != UNKNOWN:
-                        lineage_value = lineage_string(lineage)
-                        taxon_function[(rank, taxon, lineage_value, f"{category}\t{feature}")][0] += 1
-                        taxon_function[(rank, taxon, lineage_value, f"{category}\t{feature}")][1] += support
+                if include_taxon_functions:
+                    lineage = assignments.get(contig, {}).get("lineage", empty_lineage())
+                    for rank in LINEAGE_RANKS:
+                        taxon = _lineage_taxon(lineage, rank)
+                        if taxon != UNKNOWN:
+                            lineage_value = lineage_string(lineage)
+                            taxon_function[(rank, taxon, lineage_value, f"{category}\t{feature}")][0] += 1
+                            taxon_function[(rank, taxon, lineage_value, f"{category}\t{feature}")][1] += support
         tax = assignments.get(contig, {})
         gene_count += 1
         gene_lineage = tax.get("lineage", empty_lineage())
@@ -296,7 +297,10 @@ def _input_signature(samples: list[SamplePaths], min_contig_length: int) -> dict
             if path and path.is_file():
                 st = path.stat()
                 records.append({"sample": sample.name, "path": str(path), "size": st.st_size, "mtime_ns": st.st_mtime_ns})
-    parameters = {"min_contig_length": int(min_contig_length)}
+    parameters = {
+        "min_contig_length": int(min_contig_length),
+        "include_taxon_function_abundance": include_taxon_function_abundance,
+    }
     payload = {"inputs": records, "parameters": parameters}
     digest = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
     return {"version": __version__, "signature": digest, "parameters": parameters, "inputs": records}
@@ -311,10 +315,13 @@ def _valid_cached_outputs(output_root: Path, signature: dict[str, Any], force: b
         output_root / "summary" / "sample_inventory.tsv",
         output_root / "taxonomy" / "taxonomy_abundance.tsv",
         output_root / "functional" / "functional_abundance.tsv",
-        output_root / "functional" / "taxon_function_abundance.tsv",
         output_root / "summary" / "pipeline_warnings.tsv",
         output_root / "metadata" / "run_manifest.json",
     ]
+    if include_taxon_function_abundance:
+        required.append(
+            output_root / "functional" / "taxon_function_abundance.tsv"
+        )
     required.extend(output_root / "per_sample_contigs" / f"{sample.name}_Contigs.tsv.gz" for sample in samples)
     for category in FEATURE_COLUMNS:
         required.append(output_root / "functional" / "matrices" / f"{category}_gene_counts.tsv")
@@ -329,7 +336,7 @@ def _valid_cached_outputs(output_root: Path, signature: dict[str, Any], force: b
 
 
 def run_analysis(root_dir: str | Path, prefixes: str, output_dir: str | Path | None = None,
-                 min_contig_length: int = 2500, heal_flags: bool = True, force: bool = False) -> dict[str, Any]:
+                 min_contig_length: int = 2500, heal_flags: bool = True, force: bool = False, include_taxon_function_abundance: bool = True) -> dict[str, Any]:
     """Build the integrated MetaPont result set; partial samples are included with warnings."""
     root = Path(root_dir).expanduser().resolve()
     output_root = Path(output_dir).expanduser().resolve() if output_dir else root / OUTPUT_DIRNAME
@@ -410,7 +417,8 @@ def run_analysis(root_dir: str | Path, prefixes: str, output_dir: str | Path | N
             gene_support = parse_cds_summary(sample.cds_summary)
             known_contigs = set(assignments)
             annotation_map, gene_count, sample_functional, sample_taxon_functions = _annotation_maps(
-                sample, known_contigs, assignments, gene_support, gene_writer
+                sample, known_contigs, assignments, gene_support, gene_writer, include_taxon_functions=include_taxon_function_abundance,
+
             )
             for (category, feature), counts in sample_functional.items():
                 functional[(category, feature)][0] += counts[0]

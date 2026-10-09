@@ -94,7 +94,14 @@ def main(argv: list[str] | None = None) -> int:
     run_p.add_argument("--no-heal-flags", action="store_true", help="Do not recreate missing pipeline flags when all corresponding outputs exist.")
     run_p.add_argument("--min-contig-length", type=int, default=2500, help="Minimum contig length to retain an existing Kraken2 assignment; classifications are not rerun.")
     run_p.add_argument("--plots", action="store_true", help="Generate optional quick-look PNG plots (requires matplotlib).")
-
+    run_p.add_argument(
+        "--taxon-function-abundance",
+        action="store_true",
+        help=(
+            "Generate the expanded taxon-function abundance table. "
+            "Can require substantial memory and disk space."
+        ),
+    )
     inv_p = sub.add_parser("inventory", help="Audit per-sample inputs, pipeline outputs and success flags.")
     _add_root_prefix(inv_p)
     inv_p.add_argument("--heal-flags", action="store_true", help="Recreate missing flags only when the relevant output set is complete and current.")
@@ -105,7 +112,8 @@ def main(argv: list[str] | None = None) -> int:
     cov_p.add_argument("--output", default=None, help="Output TSV path (defaults under MetaPont_Results/summary).")
 
     qf_p = sub.add_parser("query-function", help="Find taxa supporting a particular eggNOG functional ID.")
-    qf_p.add_argument("--root-dir", "-d", required=True)
+    qf_p.add_argument("--root-dir", "-d", default=None,
+                      help="Workflow root used to find the default gene table; not needed with --gene-table or --output-dir.")
     qf_p.add_argument("--output-dir", default=None)
     qf_p.add_argument("--gene-table", default=None, help="Gene annotation TSV/TSV.GZ; defaults to the integrated output table.")
     qf_p.add_argument("--function-id", "-f", required=True, help="Exact function ID, e.g. GO:0016597 or EC:2.7.11.1.")
@@ -132,6 +140,7 @@ def main(argv: list[str] | None = None) -> int:
                 min_contig_length=args.min_contig_length,
                 heal_flags=not args.no_heal_flags,
                 force=args.force,
+                include_taxon_function_abundance=args.taxon_function_abundance,
             )
             if args.plots:
                 output_root = Path(result["output_dir"])
