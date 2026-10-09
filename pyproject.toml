@@ -1,55 +1,44 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "MetaPont"
-version = "0.0.10"
+version = "0.1.0"
 authors = [
-    {name = "Nicholas Dimonaco", email = "nicholas@dimonaco.co.uk"}
+    { name = "Nicholas Dimonaco", email = "nicholas@dimonaco.co.uk" }
 ]
-description = "MetaPont: A tool to bridge the gap between metagenomic tool output and its analysis."
+description = "Integrated analysis of metagenomic assembly, readmapping, Kraken2 and eggNOG-mapper outputs."
 readme = "README.md"
 requires-python = ">=3.10"
-license = {file = "LICENSE"}
-keywords = ["Metagenomics", "Bioinformatics", "Genomics"]
+license = "GPL-3.0-or-later"
+keywords = ["metagenomics", "bioinformatics", "genomics", "Kraken2", "eggNOG-mapper", "readmapping"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3 :: Only",
     "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
 ]
-dependencies = [
+dependencies = []
 
-]
+[project.optional-dependencies]
+plots = ["matplotlib>=3.7"]
+test = ["pytest>=7.0"]
 
 [project.urls]
 Homepage = "https://github.com/TheHuwsLab/MetaPont"
 "Bug Tracker" = "https://github.com/TheHuwsLab/MetaPont/issues"
 
 [project.scripts]
-Extract-By-Function = "MetaPont.Extract_By_Function:main"
-extract-by-function = "MetaPont.Extract_By_Function:main"
-Extract-By-Taxa = "MetaPont.Extract_By_Taxa:main"
-extract-by-taxa = "MetaPont.Extract_By_Taxa:main"
-Extract-Function-By-Taxa = "MetaPont.Extract_Function_By_Taxa:main"
-extract-function-by-taxa = "MetaPont.Extract_Function_By_Taxa:main"
-Extract-Reads-By-Function = "MetaPont.Extract_Reads_By_Function:main"
-extract-reads-by-function = "MetaPont.Extract_Reads_By_Function:main"
-MetaPont-Combine = "MetaPont.MetaPont_Combine:main"
-metapont-combine = "MetaPont.MetaPont_Combine:main"
-Contig-Coverage-Summary = "MetaPont.Contig_Coverage_Summary:main"
-contig-coverage-summary = "MetaPont.Contig_Coverage_Summary:main"
-Report-Contig-Lineage = "MetaPont.Report_Contig_Lineage:main"
-report-contig-lineage = "MetaPont.Report_Contig_Lineage:main"
+metapont = "MetaPont.cli:main"
+metapont-combine = "MetaPont.compat:combine_main"
 
 [tool.setuptools]
-include-package-data = false
+include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["MetaPont*"]
 
-#[tool.setuptools.package-data]
-#MetaPont = [
-
-#]
+[tool.pytest.ini_options]
+testpaths = ["tests"]
