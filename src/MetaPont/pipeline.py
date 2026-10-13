@@ -285,7 +285,8 @@ def _contig_row(sample_name: str, base: dict[str, Any], tax: dict[str, Any] | No
     return out
 
 
-def _input_signature(samples: list[SamplePaths], min_contig_length: int) -> dict[str, Any]:
+def _input_signature(samples: list[SamplePaths], min_contig_length: int,
+                    include_taxon_function_abundance: bool) -> dict[str, Any]:
     records = []
     for sample in samples:
         selected = [
@@ -306,7 +307,8 @@ def _input_signature(samples: list[SamplePaths], min_contig_length: int) -> dict
     return {"version": __version__, "signature": digest, "parameters": parameters, "inputs": records}
 
 
-def _valid_cached_outputs(output_root: Path, signature: dict[str, Any], force: bool, samples: list[SamplePaths]) -> bool:
+def _valid_cached_outputs(output_root: Path, signature: dict[str, Any], force: bool,
+                          samples: list[SamplePaths], include_taxon_function_abundance: bool) -> bool:
     manifest = output_root / "metadata" / "input_signature.json"
     required = [
         output_root / "combined" / "all_contigs.tsv.gz",
@@ -357,8 +359,8 @@ def run_analysis(root_dir: str | Path, prefixes: str, output_dir: str | Path | N
         with (dirs["inventory"] / "flag_healing.log").open("a", encoding="utf-8") as handle:
             handle.write("\n".join(healed_events) + "\n")
 
-    signature = _input_signature(samples, min_contig_length)
-    if _valid_cached_outputs(output_root, signature, force, samples):
+    signature = _input_signature(samples, min_contig_length, include_taxon_function_abundance)
+    if _valid_cached_outputs(output_root, signature, force, samples, include_taxon_function_abundance):
         warnings_path = dirs["summary"] / "pipeline_warnings.tsv"
         has_warnings = _nonempty(warnings_path) and sum(1 for _ in warnings_path.open(encoding="utf-8")) > 1
         complete_flag = output_root / "MetaPont_analysis.success"
