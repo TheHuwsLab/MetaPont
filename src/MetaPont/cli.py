@@ -114,8 +114,9 @@ def main(argv: list[str] | None = None) -> int:
     qf_p = sub.add_parser("query-function", help="Find taxa supporting a particular eggNOG functional ID.")
     qf_p.add_argument("--root-dir", "-d", default=None,
                       help="Workflow root used to find the default gene table; not needed with --gene-table or --output-dir.")
+    qf_p.add_argument("--gene-table", default=None,
+                      help="Gene annotation TSV/TSV.GZ; defaults to the integrated output table.")
     qf_p.add_argument("--output-dir", default=None)
-    qf_p.add_argument("--gene-table", default=None, help="Gene annotation TSV/TSV.GZ; defaults to the integrated output table.")
     qf_p.add_argument("--function-id", "-f", required=True, help="Exact function ID, e.g. GO:0016597 or EC:2.7.11.1.")
     qf_p.add_argument("--category", "-c", default=None, help="Optional annotation category, e.g. GO, EC, KEGG_KO, PFAM.")
     qf_p.add_argument("--rank", default="Genus", help="Taxonomic rank for attribution (default: Genus).")
@@ -123,9 +124,10 @@ def main(argv: list[str] | None = None) -> int:
     qf_p.add_argument("--output", "-o", required=True)
 
     qt_p = sub.add_parser("query-taxon", help="Report the most supported functions for a taxon.")
-    qt_p.add_argument("--root-dir", "-d", required=True)
+    qt_p.add_argument("--root-dir", "-d", default=None)
+    qt_p.add_argument("--gene-table", default=None,
+                      help="Gene annotation TSV/TSV.GZ; defaults to the integrated output table.")
     qt_p.add_argument("--output-dir", default=None)
-    qt_p.add_argument("--gene-table", default=None)
     qt_p.add_argument("--taxon", "-t", required=True, help="Taxon name or lineage token, e.g. Bacillus or g__Bacillus.")
     qt_p.add_argument("--category", "-c", required=True, help="Annotation category, e.g. GO, EC, KEGG_KO.")
     qt_p.add_argument("--rank", default="Genus")
@@ -160,17 +162,40 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Healed {len(events)} flags.")
             return 0
         if args.command == "coverage":
+            # Prevent duplicating "MetaPont_Results" if already in root_dir
+            root_path = Path(args.root_dir).expanduser().resolve()
+            if "MetaPont_Results" in root_path.parts and not args.output_dir:
+                args.output_dir = root_path
+
             out, count = coverage_summary(args.root_dir, args.prefix, args.output, args.read_length)
             print(f"Coverage summary written for {count} samples: {out}")
             return 0
         if args.command == "query-function":
+            if args.root_dir is None and args.gene_table is None:
+                raise ValueError("Either --root-dir or --gene-table must be specified.")
+
+            # Prevent duplicating "MetaPont_Results" if already in root_dir
+            root_path = Path(args.root_dir).expanduser().resolve()
+            if "MetaPont_Results" in root_path.parts and not args.output_dir:
+                args.output_dir = root_path
+
             table = _gene_table(args.root_dir, args.output_dir, args.gene_table)
             count = query_function(table, args.function_id, args.output, args.category, args.rank, args.top)
             print(f"Wrote {count} contributing taxon rows to {args.output}")
             return 0
+
         if args.command == "query-taxon":
+            if args.root_dir is None and args.gene_table is None:
+                raise ValueError("Either --root-dir or --gene-table must be specified.")
+
+            # Prevent duplicating "MetaPont_Results" if already in root_dir
+            root_path = Path(args.root_dir).expanduser().resolve()
+            if "MetaPont_Results" in root_path.parts and not args.output_dir:
+                args.output_dir = root_path
+
             table = _gene_table(args.root_dir, args.output_dir, args.gene_table)
             count = query_taxon(table, args.taxon, args.output, args.category, args.top, args.rank)
+
             print(f"Wrote {count} taxon-associated function rows to {args.output}")
             return 0
     except (FileNotFoundError, RuntimeError, ValueError, OSError) as error:

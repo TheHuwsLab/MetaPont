@@ -1,4 +1,4 @@
-# MetaPont v0.1.2
+# MetaPont v0.1.3
 
 MetaPont integrates existing metagenomic workflow outputs into per-sample and
 cross-sample tables for contigs, taxonomy, readmapping support, and eggNOG-mapper
@@ -118,7 +118,7 @@ Find taxa supporting a functional ID:
 
 ```bash
 metapont query-function \
-  --root-dir /path/to/workflow-output \
+  --root-dir /path/to/MetaPont_Results \
   --function-id GO:0016597 \
   --category GO \
   --rank Genus \
@@ -135,7 +135,7 @@ Find the most supported features associated with a taxon:
 
 ```bash
 metapont query-taxon \
-  --root-dir /path/to/workflow-output \
+  --root-dir /path/to/MetaPont_Results \
   --taxon Bacillus \
   --category GO \
   --rank Genus \
