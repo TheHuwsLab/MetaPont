@@ -1,4 +1,4 @@
-# MetaPont v0.1.3
+# MetaPont v0.1.4
 
 MetaPont integrates existing metagenomic workflow outputs into per-sample and
 cross-sample tables for contigs, taxonomy, readmapping support, and eggNOG-mapper
@@ -57,10 +57,20 @@ sample directory for the relevant files. The main inputs are:
 | Contig FASTA | Contig inventory and lengths when a readmapping contig summary is absent |
 
 Inputs are discovered independently, so incomplete samples can still be
-included. Missing or stale outputs are reported as warnings; MetaPont does not
-rerun missing upstream analyses. Kraken2 assignments shorter than the selected
-minimum contig length are omitted from taxonomy attribution by default. This
-filter does not rerun Kraken2.
+included. Missing or empty core inputs are reported as warnings; MetaPont does not
+rerun missing upstream analyses. The inventory checks the files MetaPont
+actually consumes: contigs, Pyrodigal GFF/protein FASTA, eggNOG annotation TSV,
+Kraken2 per-contig output/report, and readmapping contig/CDS summaries. Optional
+sidecars (for example BAM/index, eggNOG XLSX, MPA report, Pyrodigal NT/QC files)
+do not make an otherwise usable MetaPont input set incomplete.
+
+MetaPont deliberately does not use modification-time comparisons to decide
+whether outputs are stale. Scratch-retention commands such as `touch` can
+update timestamps without changing file contents, so timestamp ordering is not
+a reliable freshness test. The inventory reports presence/completeness, not
+whether an upstream tool was rerun against the latest source assembly. Kraken2
+assignments shorter than the selected minimum contig length are omitted from
+taxonomy attribution by default. This filter does not rerun Kraken2.
 
 ## Commands
 
@@ -81,9 +91,10 @@ Useful options:
 | Option | Default | Description |
 | --- | --- | --- |
 | `--force` | Off | Regenerate outputs even when the input signature matches a cached run. |
-| `--no-heal-flags` | Off | Do not recreate missing upstream success flags when their outputs are complete and current. |
+| `--no-heal-flags` | Off | Do not recreate missing upstream success flags when the required non-empty core outputs are present. |
 | `--min-contig-length N` | `2500` | Minimum Kraken2-assigned contig length retained for taxonomy attribution; use `0` to disable the filter. |
-| `--taxon-function-abundance` | Off | Build the expanded taxon-by-function table. This can use substantial memory and disk space. |
+| `--taxon-function-abundance` | Off | Build the expanded taxon-by-function table using a disk-backed SQLite aggregation. This adds disk I/O and temporary disk usage. |
+| `--signature-mode` | `sampled` | Cache input detection. `sampled` hashes seven evenly spaced 128 KiB blocks from each input and is insensitive to `touch`; `full` hashes every byte and is slower but provides whole-file SHA256 verification. |
 | `--plots` | Off | Write optional quick-look PNG plots. Requires the `plots` installation extra. |
 
 `metapont combine` is an alias for `metapont run`. The `metapont-combine`
@@ -95,9 +106,13 @@ command is also available for compatibility with the earlier combine command.
 metapont inventory --root-dir /path/to/workflow-output --prefix E
 ```
 
-The inventory reports discovered inputs, expected outputs, success flags, and
-warnings for each sample. Add `--heal-flags` to recreate a missing stage flag
-only when its corresponding output files are complete and current.
+The inventory reports discovered inputs, core output availability, success
+flags, and warnings for each sample. Add `--heal-flags` to recreate a missing
+stage flag only when the full expected product set for that upstream stage is
+present (including its QC/sidecar outputs where applicable). This is stricter
+than MetaPont's integration-input check, so it does not mark an upstream stage
+complete merely because MetaPont can consume a subset of its outputs. Timestamp
+freshness is intentionally not inferred.
 
 ### Summarise readmapping coverage
 
@@ -148,6 +163,20 @@ full lineage. `--category` is required for this query. Both query commands
 accept an explicit `--gene-table` path; plain TSV and gzip-compressed TSV files
 are supported.
 
+Build the expanded taxon-by-function table **after** a normal MetaPont run,
+without re-parsing the original eggNOG files or rerunning the integrated
+analysis:
+
+```bash
+metapont taxon-function-abundance \
+  --root-dir /path/to/workflow-output
+```
+
+Alternatively, provide `--gene-table` to use an existing
+`gene_annotations.tsv.gz`. This post-processing command uses a temporary
+SQLite database to keep aggregation memory bounded. The output is written to
+`MetaPont_Results/functional/taxon_function_abundance.tsv` by default.
+
 ## Results
 
 The default output tree is:
@@ -160,7 +189,7 @@ MetaPont_Results/
 ├── functional/
 │   ├── functional_abundance.tsv
 │   ├── matrices/
-│   └── taxon_function_abundance.tsv
+│   └── taxon_function_abundance.tsv  # optional; only when requested
 ├── inventory/
 │   └── sample_inventory.tsv
 ├── metadata/
@@ -190,9 +219,16 @@ Supported functional categories include `COG`, `eggNOG_OG`, `GO`, `EC`,
 is not a count of unique reads across genes. A read can support multiple genes
 or annotations, so functional support values are not mutually exclusive.
 Taxonomic relative abundance uses total mapped-read support as its denominator.
+The new `Percent_Mapped_Reads_on_Classified_Contigs` field in the sample summary
+shows how much of that denominator lies on Kraken-classified contigs.
 
-Samples with missing or stale workflow outputs are retained where possible and
-listed in `summary/pipeline_warnings.tsv`. A clean run writes
+Samples with missing or empty core workflow inputs are retained where
+possible and listed in `summary/pipeline_warnings.tsv`. The sample summary also
+reports genes processed versus genes with at least one functional feature, and
+readmapping support on Kraken-classified, unclassified, length-filtered and
+Kraken-unassigned contigs. `Genes_Annotated` remains for compatibility and is
+equivalent to `Genes_Processed`; use `Genes_With_Function` when you specifically
+mean genes with a parsed functional feature. A clean run writes
 `MetaPont_analysis.success`; a run with warnings writes
 `completed_with_warnings.flag`.
 
