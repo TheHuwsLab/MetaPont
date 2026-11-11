@@ -10,7 +10,7 @@ from pathlib import Path
 from . import MetaPont_Version, __version__
 from .analysis import coverage_summary, query_function, query_taxon
 from .layout import discover_samples
-from .pipeline import OUTPUT_DIRNAME, run_analysis, write_inventory
+from .pipeline import OUTPUT_DIRNAME, build_taxon_function_abundance, run_analysis, write_inventory
 
 
 def _add_root_prefix(parser: argparse.ArgumentParser) -> None:
@@ -22,11 +22,19 @@ def _add_root_prefix(parser: argparse.ArgumentParser) -> None:
                         help=f"Results directory (default: ROOT/{OUTPUT_DIRNAME}).")
 
 
-def _gene_table(root_dir: str, output_dir: str | None, supplied: str | None) -> Path:
+def _output_root(root_dir: str | None, output_dir: str | None) -> Path:
+    if output_dir:
+        return Path(output_dir).expanduser().resolve()
+    if not root_dir:
+        raise ValueError("Provide --root-dir, --output-dir or --gene-table.")
+    root = Path(root_dir).expanduser().resolve()
+    return root if root.name == OUTPUT_DIRNAME else root / OUTPUT_DIRNAME
+
+
+def _gene_table(root_dir: str | None, output_dir: str | None, supplied: str | None) -> Path:
     if supplied:
         return Path(supplied).expanduser().resolve()
-    output_root = Path(output_dir).expanduser().resolve() if output_dir else Path(root_dir).expanduser().resolve() / OUTPUT_DIRNAME
-    return output_root / "combined" / "gene_annotations.tsv.gz"
+    return _output_root(root_dir, output_dir) / "combined" / "gene_annotations.tsv.gz"
 
 
 def _create_plots(output_root: Path) -> list[str]:
@@ -91,20 +99,24 @@ def main(argv: list[str] | None = None) -> int:
     run_p = sub.add_parser("run", aliases=["combine"], help="Build the integrated sample inventory, contig table and abundance summaries.")
     _add_root_prefix(run_p)
     run_p.add_argument("--force", action="store_true", help="Regenerate outputs even when the recorded input signature is unchanged.")
-    run_p.add_argument("--no-heal-flags", action="store_true", help="Do not recreate missing pipeline flags when all corresponding outputs exist.")
+    run_p.add_argument("--no-heal-flags", action="store_true", help="Do not recreate missing upstream flags, even when the full expected stage output set is present.")
     run_p.add_argument("--min-contig-length", type=int, default=2500, help="Minimum contig length to retain an existing Kraken2 assignment; classifications are not rerun.")
     run_p.add_argument("--plots", action="store_true", help="Generate optional quick-look PNG plots (requires matplotlib).")
+    run_p.add_argument(
+        "--signature-mode", choices=("sampled", "full"), default="sampled",
+        help="Input change detection: sampled hashes seven evenly spaced blocks (touch-safe, default), or full SHA256 of every input byte (slower).",
+    )
     run_p.add_argument(
         "--taxon-function-abundance",
         action="store_true",
         help=(
-            "Generate the expanded taxon-function abundance table. "
-            "Can require substantial memory and disk space."
+            "Generate the expanded taxon-function abundance table using a disk-backed aggregation. "
+            "This requires additional disk I/O and temporary space."
         ),
     )
     inv_p = sub.add_parser("inventory", help="Audit per-sample inputs, pipeline outputs and success flags.")
     _add_root_prefix(inv_p)
-    inv_p.add_argument("--heal-flags", action="store_true", help="Recreate missing flags only when the relevant output set is complete and current.")
+    inv_p.add_argument("--heal-flags", action="store_true", help="Recreate missing upstream flags only when the full expected stage output set is present; timestamps are not used.")
 
     cov_p = sub.add_parser("coverage", help="Summarise per-contig readmapping statistics by sample.")
     _add_root_prefix(cov_p)
@@ -134,6 +146,15 @@ def main(argv: list[str] | None = None) -> int:
     qt_p.add_argument("--top", type=int, default=20)
     qt_p.add_argument("--output", "-o", required=True)
 
+    tf_p = sub.add_parser(
+        "taxon-function-abundance", aliases=["taxon-function"],
+        help="Build the expanded taxon-by-function table from an existing gene annotation table without rerunning the main analysis.",
+    )
+    tf_p.add_argument("--root-dir", "-d", default=None, help="Workflow root or MetaPont_Results directory.")
+    tf_p.add_argument("--gene-table", default=None, help="Existing gene_annotations.tsv or .tsv.gz file.")
+    tf_p.add_argument("--output-dir", default=None, help="MetaPont results directory (default derived from --root-dir).")
+    tf_p.add_argument("--output", "-o", default=None, help="Output TSV path (default: OUTPUT_DIR/functional/taxon_function_abundance.tsv).")
+
     args = parser.parse_args(argv)
     try:
         if args.command in {"run", "combine"}:
@@ -143,6 +164,7 @@ def main(argv: list[str] | None = None) -> int:
                 heal_flags=not args.no_heal_flags,
                 force=args.force,
                 include_taxon_function_abundance=args.taxon_function_abundance,
+                signature_mode=args.signature_mode,
             )
             if args.plots:
                 output_root = Path(result["output_dir"])
@@ -162,22 +184,26 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Healed {len(events)} flags.")
             return 0
         if args.command == "coverage":
-            # Prevent duplicating "MetaPont_Results" if already in root_dir
-            root_path = Path(args.root_dir).expanduser().resolve()
-            if "MetaPont_Results" in root_path.parts and not args.output_dir:
-                args.output_dir = root_path
-
-            out, count = coverage_summary(args.root_dir, args.prefix, args.output, args.read_length)
+            supplied_root = Path(args.root_dir).expanduser().resolve()
+            samples_root = supplied_root.parent if supplied_root.name == OUTPUT_DIRNAME else supplied_root
+            default_output_root = (
+                Path(args.output_dir).expanduser().resolve() if args.output_dir
+                else supplied_root if supplied_root.name == OUTPUT_DIRNAME
+                else supplied_root / OUTPUT_DIRNAME
+            )
+            default_output = default_output_root / "summary" / "contig_coverage_summary.tsv"
+            out, count = coverage_summary(
+                samples_root, args.prefix, args.output or default_output, args.read_length,
+            )
             print(f"Coverage summary written for {count} samples: {out}")
             return 0
         if args.command == "query-function":
-            if args.root_dir is None and args.gene_table is None:
-                raise ValueError("Either --root-dir or --gene-table must be specified.")
+            if args.root_dir is None and args.gene_table is None and args.output_dir is None:
+                raise ValueError("Provide --root-dir, --output-dir or --gene-table.")
 
-            # Prevent duplicating "MetaPont_Results" if already in root_dir
-            root_path = Path(args.root_dir).expanduser().resolve()
-            if "MetaPont_Results" in root_path.parts and not args.output_dir:
-                args.output_dir = root_path
+            # A MetaPont_Results directory can be supplied directly as root-dir.
+            if args.root_dir and Path(args.root_dir).expanduser().resolve().name == OUTPUT_DIRNAME and not args.output_dir:
+                args.output_dir = args.root_dir
 
             table = _gene_table(args.root_dir, args.output_dir, args.gene_table)
             count = query_function(table, args.function_id, args.output, args.category, args.rank, args.top)
@@ -185,18 +211,30 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "query-taxon":
-            if args.root_dir is None and args.gene_table is None:
-                raise ValueError("Either --root-dir or --gene-table must be specified.")
+            if args.root_dir is None and args.gene_table is None and args.output_dir is None:
+                raise ValueError("Provide --root-dir, --output-dir or --gene-table.")
 
-            # Prevent duplicating "MetaPont_Results" if already in root_dir
-            root_path = Path(args.root_dir).expanduser().resolve()
-            if "MetaPont_Results" in root_path.parts and not args.output_dir:
-                args.output_dir = root_path
+            # A MetaPont_Results directory can be supplied directly as root-dir.
+            if args.root_dir and Path(args.root_dir).expanduser().resolve().name == OUTPUT_DIRNAME and not args.output_dir:
+                args.output_dir = args.root_dir
 
             table = _gene_table(args.root_dir, args.output_dir, args.gene_table)
             count = query_taxon(table, args.taxon, args.output, args.category, args.top, args.rank)
 
             print(f"Wrote {count} taxon-associated function rows to {args.output}")
+            return 0
+        if args.command in {"taxon-function-abundance", "taxon-function"}:
+            if args.gene_table is None and args.root_dir is None and args.output_dir is None:
+                raise ValueError("Provide --gene-table, --root-dir or --output-dir.")
+            table = _gene_table(args.root_dir, args.output_dir, args.gene_table)
+            if args.output:
+                output = Path(args.output).expanduser().resolve()
+            elif args.output_dir or args.root_dir:
+                output = _output_root(args.root_dir, args.output_dir) / "functional" / "taxon_function_abundance.tsv"
+            else:
+                output = table.parent.parent / "functional" / "taxon_function_abundance.tsv"
+            count = build_taxon_function_abundance(table, output)
+            print(f"Wrote {count} taxon/function rows to {output}")
             return 0
     except (FileNotFoundError, RuntimeError, ValueError, OSError) as error:
         print(f"ERROR: {error}", file=sys.stderr)

@@ -186,7 +186,7 @@ def function_by_taxa_main() -> int:
     root = args.root_dir or args.directory
     if not root:
         parser.error("provide the sample root as a positional argument or with -d")
-    result = run_analysis(root, args.prefix, args.output_dir, heal_flags=True, force=False)
+    result = run_analysis(root, args.prefix, args.output_dir, heal_flags=True, force=False, include_taxon_function_abundance=True)
     print(f"Function-by-taxon results written to {result['output_dir']}/functional/taxon_function_abundance.tsv")
     return 0
 

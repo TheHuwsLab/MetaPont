@@ -11,7 +11,7 @@ from typing import Any
 
 from .constants import FEATURE_COLUMNS
 from .layout import discover_samples
-from .parsers import open_text, parse_contig_summary
+from .parsers import open_text, parse_contig_summary, split_features
 from .pipeline import write_tsv
 
 
@@ -25,12 +25,15 @@ def _read_gene_table(path: str | Path):
 def coverage_summary(root_dir: str | Path, prefixes: str, output: str | Path | None = None,
                      read_length: int | None = None) -> tuple[Path, int]:
     root = Path(root_dir).expanduser().resolve()
+    if read_length is not None and read_length <= 0:
+        raise ValueError("read_length must be a positive integer.")
     out = Path(output).expanduser().resolve() if output else root / "MetaPont_Results" / "summary" / "contig_coverage_summary.tsv"
     samples = discover_samples(root, prefixes)
     rows: list[dict[str, Any]] = []
     for sample in samples:
-        if sample.contig_summary is None:
-            rows.append({"Sample": sample.name, "Status": "missing_contig_summary"})
+        if sample.contig_summary is None or not sample.contig_summary.is_file() or sample.contig_summary.stat().st_size == 0:
+            rows.append({"Sample": sample.name, "Status": "missing_or_empty_contig_summary",
+                         "Contig_Summary": str(sample.contig_summary or "")})
             continue
         n_contigs = total_mapped = total_reported = 0
         mapped_counts: list[int] = []
@@ -88,8 +91,9 @@ def coverage_summary(root_dir: str | Path, prefixes: str, output: str | Path | N
     return out, len(rows)
 
 
-def _feature_values(cell: str) -> list[str]:
-    return [part.strip() for part in cell.replace(",", "|").replace(";", "|").split("|") if part.strip() and part.strip() != "-"]
+def _feature_values(cell: str, category: str) -> list[str]:
+    """Use the same feature parsing rules as the main annotation pipeline."""
+    return split_features(cell, category)
 
 
 def query_function(gene_table: str | Path, function_id: str, output: str | Path,
@@ -98,6 +102,8 @@ def query_function(gene_table: str | Path, function_id: str, output: str | Path,
     path = Path(gene_table)
     if not path.is_file():
         raise FileNotFoundError(f"Gene annotation table not found: {path}")
+    if top_n is not None and top_n < 1:
+        raise ValueError("top_n must be a positive integer.")
     cat_norm = category.upper().replace("-", "_") if category else None
     cat_aliases = {k.upper(): k for k in FEATURE_COLUMNS}
     if cat_norm and cat_norm not in cat_aliases:
@@ -110,7 +116,7 @@ def query_function(gene_table: str | Path, function_id: str, output: str | Path,
     denominator: dict[str, int] = defaultdict(int)
     categories = [chosen_cat] if chosen_cat else list(FEATURE_COLUMNS)
     for row in _read_gene_table(path):
-        found = any(function_id in _feature_values(row.get(cat, "")) for cat in categories)
+        found = any(function_id in _feature_values(row.get(cat, ""), cat) for cat in categories)
         if not found:
             continue
         sample = row.get("Sample", "")
@@ -151,6 +157,8 @@ def query_taxon(gene_table: str | Path, taxon_query: str, output: str | Path,
     path = Path(gene_table)
     if not path.is_file():
         raise FileNotFoundError(f"Gene annotation table not found: {path}")
+    if top_n < 1:
+        raise ValueError("top_n must be a positive integer.")
     category_key = category.upper().replace("-", "_")
     aliases = {key.upper(): key for key in FEATURE_COLUMNS}
     if category_key not in aliases:
@@ -167,7 +175,7 @@ def query_taxon(gene_table: str | Path, taxon_query: str, output: str | Path,
             continue
         sample = row.get("Sample", "")
         support = int(float(row.get("Gene_Read_Support", 0) or 0))
-        for feature in _feature_values(row.get(category_name, "")):
+        for feature in _feature_values(row.get(category_name, ""), category_name):
             counts[(sample, value, lineage, feature)][0] += 1
             counts[(sample, value, lineage, feature)][1] += support
     per_sample: dict[str, list[dict[str, Any]]] = defaultdict(list)
